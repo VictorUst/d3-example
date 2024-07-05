@@ -20,6 +20,8 @@ interface Link extends d3.SimulationLinkDatum<Node> {
 })
 export class ForceDirectedTreeComponent implements OnInit {
 
+  private svg: any;
+
   constructor(private el: ElementRef) { }
 
   ngOnInit(): void {
@@ -31,7 +33,7 @@ export class ForceDirectedTreeComponent implements OnInit {
     const width = 1920;
     const height = 1080;
 
-    const svg = d3.select(element).append('svg')
+    this.svg = d3.select(element).append('svg')
       .attr('width', width)
       .attr('height', height);
 
@@ -69,7 +71,7 @@ export class ForceDirectedTreeComponent implements OnInit {
       .force('charge', d3.forceManyBody().strength(-300))
       .force('center', d3.forceCenter(width / 2, height / 2));
 
-    const link = svg.append('g')
+    const link = this.svg.append('g')
       .attr('class', 'links')
       .selectAll('line')
       .data(links)
@@ -83,11 +85,11 @@ export class ForceDirectedTreeComponent implements OnInit {
         return d.style === 'dashed' ? '5,5' : 'none'; // Если стиль dashed, то пунктирная линия
       });
 
-    const node = svg.append('g')
+    const node = this.svg.append('g')
     .selectAll('image')
     .data(nodes)
     .enter().append('image')
-    .attr('xlink:href', d => d.icon) // Используем путь к изображению из данных узла
+    .attr('xlink:href', (d: { icon: any; }) => d.icon) // Используем путь к изображению из данных узла
     .attr('width', 40) // Ширина изображения
     .attr('height', 40) // Высота изображения
     .attr('x', (d: Node) => d.x ? d.x - 20 : 0)
@@ -97,7 +99,7 @@ export class ForceDirectedTreeComponent implements OnInit {
       .on('drag', (event, d) => this.dragged(event, d))
       .on('end', (event, d) => this.dragended(event, d, simulation)));
 
-    const text = svg.append('g')
+    const text = this.svg.append('g')
       .attr('class', 'texts')
       .selectAll('text')
       .data(nodes)
@@ -152,5 +154,18 @@ export class ForceDirectedTreeComponent implements OnInit {
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
+  }
+
+  saveAsSvg(): void {
+    const svgString = new XMLSerializer().serializeToString(this.svg.node());
+    const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'force-directed-tree.svg';
+    a.click();
+
+    URL.revokeObjectURL(url);
   }
 }
