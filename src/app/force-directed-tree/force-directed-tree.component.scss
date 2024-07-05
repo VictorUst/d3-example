@@ -1,0 +1,25 @@
+/* Стили для SVG контейнера */
+svg {
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+}
+
+/* Стили для связей (линий) */
+.links line {
+  stroke: #999; /* Цвет линий */
+  stroke-opacity: 0.6; /* Прозрачность линий */
+}
+
+/* Стили для узлов (кругов) */
+.nodes circle {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+/* Стили для текста */
+.texts text {
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  fill: #333;
+  pointer-events: none;
+}
