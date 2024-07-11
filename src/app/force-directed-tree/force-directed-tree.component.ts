@@ -1,9 +1,10 @@
+import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, ElementRef } from '@angular/core';
 import * as d3 from 'd3';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
-  icon: string;
+  image: string;
   title: string;
 }
 
@@ -21,11 +22,20 @@ interface Link extends d3.SimulationLinkDatum<Node> {
 export class ForceDirectedTreeComponent implements OnInit {
 
   private svg: any;
+  private icons: any;
 
-  constructor(private el: ElementRef) { }
+
+  constructor(
+    private el: ElementRef,
+    private http: HttpClient
+    ) { }
 
   ngOnInit(): void {
-    this.createForceDirectedTree();
+    this.http.get('assets/icons.json').subscribe((icons) => {
+      this.icons = icons;
+      console.log(this.icons);
+      this.createForceDirectedTree();
+    });
   }
 
   createForceDirectedTree(): void {
@@ -33,22 +43,18 @@ export class ForceDirectedTreeComponent implements OnInit {
     const width = 1920;
     const height = 1080;
 
-    this.svg = d3.select(element).append('svg')
-      .attr('width', width)
-      .attr('height', height);
-
     const nodes: Node[] = [
-      { id: 'A', icon: '../../assets/icons/router.png', title: 'Роутер' },
-      { id: 'B', icon: '../../assets/icons/internet.png', title: 'Интернет'},
-      { id: 'C', icon: '../../assets/icons/server.png', title: 'Сервер' },
-      { id: 'D1', icon: '../../assets/icons/desktop.png', title: 'ПК' },
-      { id: 'D2', icon: '../../assets/icons/desktop.png', title: 'ПК' },
-      { id: 'D3', icon: '../../assets/icons/desktop.png', title: 'ПК' },
-      { id: 'E1', icon: '../../assets/icons/laptop.jpg', title: 'Ноутбук' },
-      { id: 'E2', icon: '../../assets/icons/laptop.jpg', title: 'Ноутбук' },
-      { id: 'E3', icon: '../../assets/icons/laptop.jpg', title: 'Ноутбук' },
-      { id: 'G1', icon: '../../assets/icons/switch.png', title:  'Switch' },
-      { id: 'G2', icon: '../../assets/icons/switch.png', title:  'Switch' },
+      { id: 'A', image: this.icons['A'] , title: 'Роутер' },
+      { id: 'B', image: this.icons['B'], title: 'Интернет'},
+      { id: 'C', image: '../../assets/icons/edit.svg', title: 'Сервер' },
+      { id: 'D1', image: '../../assets/icons/svgserv.svg', title: 'ПК' },
+      { id: 'D2', image: '../../assets/icons/svgserv.svg', title: 'ПК' },
+      { id: 'D3', image: '../../assets/icons/svgserv.svg', title: 'ПК' },
+      { id: 'E1', image: '../../assets/icons/svgserv.svg', title: 'Ноутбук' },
+      { id: 'E2', image: '../../assets/icons/svgserv.svg', title: 'Ноутбук' },
+      { id: 'E3', image: '../../assets/icons/svgserv.svg', title: 'Ноутбук' },
+      { id: 'G1', image: this.icons['B'], title:  'Switch' },
+      { id: 'G2', image: this.icons['B'], title:  'Switch' },
     ];
 
     const links: Link[] = [
@@ -64,7 +70,9 @@ export class ForceDirectedTreeComponent implements OnInit {
       { source: 'G2', target: 'E3', style: 'dashed'  }
     ];
 
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
+    this.svg = d3.select(element).append('svg')
+      .attr('width', width)
+      .attr('height', height);
 
     const simulation = d3.forceSimulation<Node>(nodes)
       .force('link', d3.forceLink<Node, Link>(links).id((d: Node) => d.id).distance(100))
@@ -76,25 +84,25 @@ export class ForceDirectedTreeComponent implements OnInit {
       .selectAll('line')
       .data(links)
       .enter().append('line')
-      .attr('stroke', '#999') // Установка цвета линий
-      .attr('stroke-opacity', 0.6) // Установка прозрачности линий
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.6)
       .attr('stroke-width', (d: Link) => {
-        return d.style === 'dashed' ? 2 : 4; // Толщина линии в зависимости от стиля
+        return d.style === 'dashed' ? 2 : 4;
       })
       .attr('stroke-dasharray', (d: Link) => {
-        return d.style === 'dashed' ? '5,5' : 'none'; // Если стиль dashed, то пунктирная линия
+        return d.style === 'dashed' ? '5,5' : 'none';
       });
 
     const node = this.svg.append('g')
     .selectAll('image')
     .data(nodes)
     .enter().append('image')
-    .attr('xlink:href', (d: { icon: any; }) => d.icon) // Используем путь к изображению из данных узла
-    .attr('width', 40) // Ширина изображения
-    .attr('height', 40) // Высота изображения
+    .attr('xlink:href', (d: { image: any; }) => d.image)
+    .attr('width', 40)
+    .attr('height', 40)
     .attr('x', (d: Node) => d.x ? d.x - 20 : 0)
     .attr('y', (d: Node) => d.y ? d.y - 20 : 0)
-    .call(d3.drag<SVGImageElement, Node>() // Указываем явно типы данных для drag
+    .call(d3.drag<SVGImageElement, Node>()
       .on('start', (event, d) => this.dragstarted(event, d, simulation))
       .on('drag', (event, d) => this.dragged(event, d))
       .on('end', (event, d) => this.dragended(event, d, simulation)));
@@ -157,15 +165,25 @@ export class ForceDirectedTreeComponent implements OnInit {
   }
 
   saveAsSvg(): void {
-    const svgString = new XMLSerializer().serializeToString(this.svg.node());
-    const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(blob);
+    const svg = document.querySelector('svg');
+    if (svg) {
+      const serializer = new XMLSerializer();
+      const source = serializer.serializeToString(svg);
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'force-directed-tree.svg';
-    a.click();
-
-    URL.revokeObjectURL(url);
+      const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'graph.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   }
+
+
+
+
 }
+
